@@ -1,0 +1,7 @@
+*.jpg
+video/
+source/
+face/
+body/
+testbody/
+*.pyc
