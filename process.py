@@ -7,6 +7,7 @@ import numpy as np
 import sys
 import dlib
 from skimage import io
+from datetime import datetime
 
 videoPath 		= 'video/'
 previousVideo 	= None
@@ -168,31 +169,42 @@ for videoName in lines:
 								pos_body_y = y
 								pos_body_w = w
 								pos_body_h = h
-								sumB = 0
-								sumG = 0
-								sumR = 0
+								list_B = []
+								list_G = []
+								list_R = []
+
 								for x,y in frameShirt:
-									sumB += image[pos_body_y+int(y*pos_body_h),(pos_body_x+int(x*pos_body_w)),0]
-									sumG += image[pos_body_y+int(y*pos_body_h),(pos_body_x+int(x*pos_body_w)),1]
-									sumR += image[pos_body_y+int(y*pos_body_h),(pos_body_x+int(x*pos_body_w)),2]
-									
-								shirtcolor_r = int(sumR/10)
-								shirtcolor_g = int(sumG/10)
-								shirtcolor_b = int(sumB/10)
+									list_B.append(image[pos_body_y+int(y*pos_body_h),(pos_body_x+int(x*pos_body_w)),0])
+									list_G.append(image[pos_body_y+int(y*pos_body_h),(pos_body_x+int(x*pos_body_w)),1])
+									list_R.append(image[pos_body_y+int(y*pos_body_h),(pos_body_x+int(x*pos_body_w)),2])
 
-						timestamp = fileName[12:18]+fileName[4:12] #time + date
-						face_path = face_path
-						fullbody_path = fullbody_path
-						videopath = 'video/'+videoName
-						timelapse = i
-						position_x = position_x
-						position_y = position_y
-						position_w = position_w
-						position_h = position_h
-						shirtcolor_r = shirtcolor_r
-						shirtcolor_g = shirtcolor_g
-						shirtcolor_b = shirtcolor_b
+								shirtcolor_r = int(np.average(list_R))
+								shirtcolor_g = int(np.average(list_G))
+								shirtcolor_b = int(np.average(list_B))
 
+								sd_r 	= int(np.std(list_B))
+								sd_g	= int(np.std(list_G))
+								sd_b 	= int(np.std(list_R))
+
+
+#/////////////////////////// For Database //////////////////////////////////
+
+						dt_str 			= fileName[10:12]+'/'+fileName[8:10]+'/'+fileName[4:8]+' '+fileName[12:14]+':'+fileName[14:16]+':'+fileName[16:18]
+						timestamp 		= datetime.strptime(dt_str, '%d/%m/%Y %I:%M:%S') #time + date
+						face_path 		= face_path
+						fullbody_path 	= fullbody_path
+						videopath 		= 'video/'+videoName
+						timelapse 		= i
+						position_x 		= position_x
+						position_y 		= position_y
+						position_w 		= position_w
+						position_h 		= position_h
+						shirtcolor_r 	= shirtcolor_r
+						shirtcolor_g 	= shirtcolor_g
+						shirtcolor_b 	= shirtcolor_b
+						sd_r 			= sd_r
+						sd_g 			= sd_g
+						sd_b 			= sd_b
 
 
 		except Exception as inst:
