@@ -89,7 +89,7 @@ for videoName in lines:
 		#fail += 1
 		print("Some reader error : "+str(inst))
 		continue
-	for i in range(300):
+	for Tlapse in range(300):
 		print("process : " + str(i))
 		try:							# processing
 			image = vid.get_data(i)
@@ -143,10 +143,10 @@ for videoName in lines:
 
 						print("face det")
 						face_path 			= None
-						position_x 			= 0
-						position_y 			= 0
-						position_w 			= 0
-						position_h 			= 0
+						position_x 			= None
+						position_y 			= None
+						position_w 			= None
+						position_h 			= None
 						recognition_face	= None
 
 						dets = detector(image, 1)
@@ -173,21 +173,24 @@ for videoName in lines:
 
 						print("body det")
 						fullbody_path = None
-						bodys,w=hog.detectMultiScale(roi_image, winStride=(8,8), padding=(32,32), scale=1.05)
-
+						bodys,w=hog.detectMultiScale(roi_image, winStride=(8,8), padding=(16,16), scale=1.1)
+						print("pass0")
 						maxSize = 0
-						pos_body_x = 0
-						pos_body_y = 0
-						pos_body_w = 0
-						pos_body_h = 0
+						pos_body_x = None
+						pos_body_y = None
+						pos_body_w = None
+						pos_body_h = None
 
 						shirtcolor_r = None
 						shirtcolor_g = None
 						shirtcolor_b = None
 
+						sd_r = None
+
 						for x, y, w, h in bodys:
 							if(w*h > maxSize):
 								maxSize = w*h
+						print("pass1")
 
 						for x, y, w, h in bodys:
 							if(w*h >= maxSize):
@@ -215,20 +218,22 @@ for videoName in lines:
 								sd_r 	= int(np.std(list_B))
 								sd_g	= int(np.std(list_G))
 								sd_b 	= int(np.std(list_R))
-
+						print("pass2")
 
 #/////////////////////////// For Database ///////////////////////////////////
 
+						tokens = fileName[0:8];
+
 						dt_str 				= fileName[14:16]+'/'+fileName[12:14]+'/'+fileName[8:12]+' '+fileName[16:18]+':'+fileName[18:20]+':'+fileName[20:22]
 						account = Account.objects.filter(email=recognition_face).first()
-						camera = Camera_Detail.objects.filter(company__token=tokens).first()
+						camera = Camera_Detail.objects.filter(token=tokens).first()
 
 						search = Searching_Detail.objects.create(
 							timestamp = datetime.strptime(dt_str, '%d/%m/%Y %H:%M:%S'), #time + date
 							face_path = face_path,
 							fullbody_path = fullbody_path,
 							video_path = 'video/'+videoName,
-							timelapse = i,
+							timelapse = Tlapse,
 							position_x = position_x,
 							position_y = position_y,
 							position_w = position_w,
