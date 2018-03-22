@@ -37,18 +37,18 @@ from source.models import Searching_Detail
 
 
 search = Searching_Detail.objects.create(
-    recognition_face = "panzazaza"
-	face_path = "panzaza"
-	fullbody_path = "panza"
-	videopath = "pan"
-	timelapse = "50"
-	position_x = "X"
-	position_y = "Y"
-	position_w = "W"
-	position_h = "H"
-	shirtcolor_r = "R"
-	shirtcolor_g = "G",
-	shirtcolor_b = "B"
+    recognition_face = "panzazaza",
+	face_path = "panzaza",
+	fullbody_path = "panza",
+	videopath = "pan",
+	timelapse = "50",
+	position_x = "X",
+	position_y = "Y",
+	position_w = "W",
+	position_h = "H",
+	shirtcolor_r = 1,
+	shirtcolor_g = 2,
+	shirtcolor_b = 3
 )
 search.save()
 

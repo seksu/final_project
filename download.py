@@ -7,10 +7,10 @@ ftpAddr 	= '161.246.5.152'
 ftpUser		= 'root'
 ftpPass	 	= '123456'
 ftpDir		= 'ipcam'
-tokens		= ['a121','a122','a123']
+# tokens		= ['a121','a122','a123']
 
 #####################################
-
+import sys
 import pylab
 import cv2
 #import imageio
@@ -21,13 +21,21 @@ from urllib import urlcleanup
 import os
 import time
 from os.path import join, getsize
+sys.path.append('/home/pansek/webserver')
+import django
+os.environ["DJANGO_SETTINGS_MODULE"] = 'webserver.settings'
+django.setup()
+from camera.models import Camera_Detail
+tokens = []
+for obj in Camera_Detail.objects.all():
+	tokens.append(obj.token)
 
 minStore 	 		= ''
-listFileName 		= [] 
+listFileName 		= []
 previousVideo_name 	= ''
 
 while 1:
-	ftp = FTP(ftpAddr)     							
+	ftp = FTP(ftpAddr)
 	ftp.login(ftpUser,ftpPass)
 
 	year 	= str(gmtime().tm_year)

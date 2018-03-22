@@ -8,6 +8,19 @@ import sys
 import dlib
 from skimage import io
 from datetime import datetime
+import subprocess
+
+
+sys.path.append('/home/pansek/webserver')
+import django
+os.environ["DJANGO_SETTINGS_MODULE"] = 'webserver.settings'
+django.setup()
+from source.models import Searching_Detail
+from account.models import Account
+from camera.models import Camera_Detail
+
+
+debugMode = True
 
 videoPath 		= 'video/'
 previousVideo 	= None
@@ -29,10 +42,24 @@ hog.setSVMDetector( cv2.HOGDescriptor_getDefaultPeopleDetector() )
 frameShirt = 	[[0.33,0.25],[0.42,0.25],[0.50,0.25],[0.58,0.25],[0.66,0.25],
 				[0.50,0.20],[0.50,0.31],[0.50,0.37],[0.50,0.43],[0.50,0.49]]
 
+def facerecognition(image):
+	temp    = subprocess.check_output(['python', '/home/pansek/openface/demos/classifier.py', 'infer', 'classifier.pkl', image])
+	lines   = temp.split("\n")
+	lineEnd = str(lines[len(lines)-2])
+	words   = lineEnd.split(' ')
+	if(words[0] == "Predict"):
+		print("start with predict")
+		print("Name : "+words[1])
+		return(words[1])
+	else:
+		print("doesn't start with predict")
+		return words[1]
+	print(":: " + lineEnd)
+
 #videoList = os.listdir(videoPath)
 f = open('downloadList','r')
 lines = f.readlines()
-
+count_frame = 0
 for videoName in lines:
 	bodyCount = 0
 	faceCount = 0
@@ -59,7 +86,7 @@ for videoName in lines:
 		print("try : "+str(videoPath)+str(videoName))
 		vid = imageio.get_reader(str(videoPath)+str(videoName),  'ffmpeg')
 	except Exception as inst:
-		fail += 1
+		#fail += 1
 		print("Some reader error : "+str(inst))
 		continue
 	for i in range(300):
@@ -81,8 +108,9 @@ for videoName in lines:
 				maxy = 719
 				maxw = 1
 				maxh = 1
+				if(debugMode):
+					print("length of contour : "+str(len(contours)))
 				for contour in contours:
-
 					if(cv2.contourArea(contour) > 400):
 						print("having contour")
 						xb,yb,wb,hb = cv2.boundingRect(contour)
@@ -114,11 +142,12 @@ for videoName in lines:
 				#cv2.imshow('process',image)
 
 						print("face det")
-						face_path = None
-						position_x = None
-						position_y = None
-						position_w = None
-						position_h = None
+						face_path 			= None
+						position_x 			= 0
+						position_y 			= 0
+						position_w 			= 0
+						position_h 			= 0
+						recognition_face	= None
 
 						dets = detector(image, 1)
 						if(len(dets)):
@@ -126,13 +155,14 @@ for videoName in lines:
 							print("Number of faces detected: {}".format(len(dets)))
 							for i, d in enumerate(dets):
 								print("Detection {}: Left: {} Top: {} Right: {} Bottom: {}".format(i, d.left(), d.top(), d.right(), d.bottom()))
-								position_x = d.left()
-								position_y = d.top()
-								position_w = d.right()-d.left()
-								position_h = d.bottom()-d.top()
-								face_path = 'face/face_'+str(fileName)+str(faceCount)+'.jpg'
+								position_x 			= d.left()
+								position_y 			= d.top()
+								position_w 			= d.right()-d.left()
+								position_h 			= d.bottom()-d.top()
+								face_path 			= 'face/face_'+str(fileName)+str(faceCount)+'.jpg'
 								cv2.imwrite('face/face_'+str(fileName)+str(faceCount)+'.jpg',bgr_image[d.top():d.bottom(),d.left():d.right()])
-								faceCount = faceCount+1
+								faceCount 			= faceCount+1
+								recognition_face 	= facerecognition(face_path)
 
 				# bodys = body_cascade.detectMultiScale(image, minCascade, maxCascade) #1.3 5
 				# bodyCount = 0
@@ -187,28 +217,45 @@ for videoName in lines:
 								sd_b 	= int(np.std(list_R))
 
 
-#/////////////////////////// For Database //////////////////////////////////
+#/////////////////////////// For Database ///////////////////////////////////
 
-						dt_str 			= fileName[10:12]+'/'+fileName[8:10]+'/'+fileName[4:8]+' '+fileName[12:14]+':'+fileName[14:16]+':'+fileName[16:18]
-						timestamp 		= datetime.strptime(dt_str, '%d/%m/%Y %I:%M:%S') #time + date
-						face_path 		= face_path
-						fullbody_path 	= fullbody_path
-						videopath 		= 'video/'+videoName
-						timelapse 		= i
-						position_x 		= position_x
-						position_y 		= position_y
-						position_w 		= position_w
-						position_h 		= position_h
-						shirtcolor_r 	= shirtcolor_r
-						shirtcolor_g 	= shirtcolor_g
-						shirtcolor_b 	= shirtcolor_b
-						sd_r 			= sd_r
-						sd_g 			= sd_g
-						sd_b 			= sd_b
+						dt_str 				= fileName[14:16]+'/'+fileName[12:14]+'/'+fileName[8:12]+' '+fileName[16:18]+':'+fileName[18:20]+':'+fileName[20:22]
+						account = Account.objects.filter(email=recognition_face).first()
+						camera = Camera_Detail.objects.filter(company__token=tokens).first()
+
+						search = Searching_Detail.objects.create(
+							timestamp = datetime.strptime(dt_str, '%d/%m/%Y %H:%M:%S'), #time + date
+							face_path = face_path,
+							fullbody_path = fullbody_path,
+							video_path = 'video/'+videoName,
+							timelapse = i,
+							position_x = position_x,
+							position_y = position_y,
+							position_w = position_w,
+							position_h = position_h,
+							pos_body_x = pos_body_x,
+							pos_body_y = pos_body_y,
+							pos_body_w = pos_body_w,
+							pos_body_h = pos_body_h,
+							shirtcolor_r = shirtcolor_r,
+							shirtcolor_g = shirtcolor_g,
+							shirtcolor_b = shirtcolor_b,
+							sd_r = sd_r,
+							sd_g = sd_g,
+							sd_b = sd_b,
+							account = account,
+							camera = camera
+						)
+						search.save()
+						print('>>>>> frame : '+ str(count_frame) +'<<<<<')
+						count_frame += 1
+						#print("facepath" + str(face_path))
+						#print("fullbody" + str(fullbody_path))
+
 
 
 		except Exception as inst:
-			fail += 1
+			#fail += 1
 			print("processing error : "+str(inst))
 			#print(type(image))
 			continue
