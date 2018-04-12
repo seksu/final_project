@@ -18,6 +18,7 @@ django.setup()
 from source.models import Searching_Detail
 from account.models import Account
 from camera.models import Camera_Detail
+from django.core.cache import cache
 
 
 debugMode = True
@@ -64,7 +65,7 @@ for videoName in lines:
 	bodyCount = 0
 	faceCount = 0
 	testCount = 0
-
+	index = 0
 	print("processing : "+str(videoName))
 	f = open('processList','ab+')
 	inLine = False
@@ -228,6 +229,7 @@ for videoName in lines:
 						account = Account.objects.filter(email=recognition_face).first()
 						camera = Camera_Detail.objects.filter(token=tokens).first()
 
+
 						search = Searching_Detail.objects.create(
 							timestamp = datetime.strptime(dt_str, '%d/%m/%Y %H:%M:%S'), #time + date
 							face_path = face_path,
@@ -252,6 +254,11 @@ for videoName in lines:
 							camera = camera
 						)
 						search.save()
+						if search.account:
+							if search.account.email == "unknown@"+cache.get('company')+".com":
+								cache.set(str(index),search,60)
+								cache.set('index',index,60*60*24)
+								index+=1
 						print('>>>>> frame : '+ str(count_frame) +'<<<<<')
 						count_frame += 1
 						#print("facepath" + str(face_path))
